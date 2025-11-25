@@ -1,5 +1,7 @@
 .DS_Store
 /.build
+/.claude
+/.idea
 /Packages
 xcuserdata/
 DerivedData/
@@ -7,3 +9,4 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 .vscode/launch.json
+CLAUDE.md
