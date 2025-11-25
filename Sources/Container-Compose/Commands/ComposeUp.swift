@@ -149,16 +149,6 @@ public struct ComposeUp: AsyncParsableCommand, @unchecked Sendable {
             print("--- Networks Processed ---\n")
         }
 
-        // Process top-level volumes
-        // This creates named volumes defined in the docker-compose.yml
-        if let volumes = dockerCompose.volumes {
-            print("\n--- Processing Volumes ---")
-            for (volumeName, volumeConfig) in volumes {
-                guard let volumeConfig else { continue }
-                await createVolumeHardLink(name: volumeName, config: volumeConfig)
-            }
-            print("--- Volumes Processed ---\n")
-        }
 
         // Process each service defined in the docker-compose.yml
         print("\n--- Processing Services ---")
@@ -252,18 +242,6 @@ public struct ComposeUp: AsyncParsableCommand, @unchecked Sendable {
         }
     }
 
-    private func createVolumeHardLink(name volumeName: String, config volumeConfig: Volume) async {
-        guard let projectName else { return }
-        let actualVolumeName = volumeConfig.name ?? volumeName  // Use explicit name or key as name
-
-        let volumeUrl = URL.homeDirectory.appending(path: ".containers/Volumes/\(projectName)/\(actualVolumeName)")
-        let volumePath = volumeUrl.path(percentEncoded: false)
-
-        print(
-            "Warning: Volume source '\(actualVolumeName)' appears to be a named volume reference. The 'container' tool does not support named volume references in 'container run -v' command. Linking to \(volumePath) instead."
-        )
-        try? fileManager.createDirectory(atPath: volumePath, withIntermediateDirectories: true)
-    }
 
     private func setupNetwork(name networkName: String, config networkConfig: Network?) async throws {
         let actualNetworkName = networkConfig?.name ?? networkName  // Use explicit name or key as name
@@ -687,22 +665,9 @@ public struct ComposeUp: AsyncParsableCommand, @unchecked Sendable {
                 }
             }
         } else {
-            guard let projectName else { return [] }
-            let volumeUrl = URL.homeDirectory.appending(path: ".containers/Volumes/\(projectName)/\(source)")
-            let volumePath = volumeUrl.path(percentEncoded: false)
-
-            let destinationUrl = URL(fileURLWithPath: destination).deletingLastPathComponent()
-            let destinationPath = destinationUrl.path(percentEncoded: false)
-
-            print(
-                "Warning: Volume source '\(source)' appears to be a named volume reference. The 'container' tool does not support named volume references in 'container run -v' command. Linking to \(volumePath) instead."
-            )
-            try fileManager.createDirectory(atPath: volumePath, withIntermediateDirectories: true)
-
-            // Host path exists and is a directory, add the volume
+            // Named volume - pass directly to container run, it will be created automatically if it doesn't exist
             runCommandArgs.append("-v")
-            // Reconstruct the volume string without mode, ensuring it's source:destination
-            runCommandArgs.append("\(volumePath):\(destinationPath)")  // Use original source for command argument
+            runCommandArgs.append("\(source):\(destination)")
         }
 
         return runCommandArgs
