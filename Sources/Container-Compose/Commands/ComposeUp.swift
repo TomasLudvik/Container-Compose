@@ -533,6 +533,12 @@ public struct ComposeUp: AsyncParsableCommand, @unchecked Sendable {
             runCommandArgs.append("-t")  // --tty
         }
 
+        // Configure DNS for container-to-container name resolution
+        if let dnsSearch = service.dns_search {
+            runCommandArgs.append("--dns-search")
+            runCommandArgs.append(dnsSearch)
+        }
+
         runCommandArgs.append(imageToRun)  // Add the image name as the final argument before command/entrypoint
 
         // Add entrypoint or command
